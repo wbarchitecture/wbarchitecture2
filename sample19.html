@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ウェルビーイングと空間要素</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a1a1a; --accent-pos: #d4a373; --accent-neg: #457b9d;
+            --bg: #f8f8f8; --card-bg: #ffffff; --text: #222; --border: #eeeeee;
+        }
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Sans", sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
+        
+        header { border-bottom: 1px solid var(--primary); margin-bottom: 30px; padding-bottom: 20px; display: flex; flex-direction: column; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        
+        .print-btn {
+            background: var(--primary); color: #fff; padding: 10px 25px; font-size: 0.8rem;
+            letter-spacing: 0.2em; cursor: pointer; border: none; transition: 0.3s; display: flex; align-items: center; gap: 10px;
+        }
+        .print-btn:hover { opacity: 0.8; transform: translateY(-2px); }
+
+        .description-text { font-size: 0.85rem; color: #555; line-height: 1.8; margin-top: 20px; max-width: 1100px; white-space: pre-wrap; }
+
+        .status-bar { background: #fff; padding: 10px 20px; border: 1px solid var(--border); margin-bottom: 20px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
+
+        .config-panel { display: grid; grid-template-columns: 350px 1fr; gap: 40px; background: white; padding: 30px; border: 1px solid var(--border); margin-bottom: 40px; }
+        .filter-panel { border-left: 1px solid var(--border); padding-left: 40px; }
+        .filter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        
+        label { display: block; font-size: 0.65rem; font-weight: bold; color: #888; margin-bottom: 5px; text-transform: uppercase; }
+        select { width: 100%; padding: 10px; border: 1px solid var(--border); font-size: 0.85rem; background: #fff; border-radius: 0; }
+        .target-select { font-size: 1.1rem; font-weight: 300; background: #fafafa; border-bottom: 2px solid var(--primary); }
+
+        .comparison-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .column-header { text-align: center; margin-bottom: 20px; padding: 10px; background: var(--primary); color: white; letter-spacing: 0.2em; font-weight: 200; text-transform: uppercase; font-size: 0.9rem; }
+        .n-badge { font-size: 0.7rem; color: #aaa; margin-top: 5px; }
+
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; min-height: 400px; }
+        .card { 
+            background: var(--card-bg); border: 1px solid var(--border); 
+            display: flex; flex-direction: column; opacity: 0; transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .card.is-visible { opacity: 1; transform: translateY(0); }
+        .card-visual { width: 100%; height: 140px; overflow: hidden; background: #f0f0f0; display: flex; align-items: center; justify-content: center; }
+        .card-visual img { width: 100%; height: 100%; object-fit: cover; }
+        .card-content { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-label { font-size: 0.8rem; font-weight: 500; min-height: 3.2em; margin-bottom: 10px; line-height: 1.5; }
+        .card-footer { display: flex; justify-content: space-between; align-items: baseline; }
+        .r-value { font-size: 1.6rem; font-weight: 200; font-family: 'Georgia', serif; }
+        .pos { color: var(--accent-pos); } .neg { color: var(--accent-neg); }
+        .r-unit { font-size: 0.5rem; color: #aaa; margin-left: 4px; }
+
+        @media (max-width: 1100px) {
+            .comparison-layout, .config-panel { grid-template-columns: 1fr; }
+            .filter-panel { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="main-content">
+    <header>
+        <div class="header-top">
+            <h1 style="font-weight: 300; letter-spacing: 0.1em; margin:0;">ウェルビーイングと空間要素</h1>
+            <button class="print-btn" onclick="generatePreview()">
+                <i data-lucide="printer" size="16"></i> PRINT
+            </button>
+        </div>
+        <div class="title-row" style="margin-top:20px;">
+            <div id="total-n" style="font-size: 0.8rem; font-weight: bold; letter-spacing: 0.1em;">TOTAL N = 0</div>
+        </div>
+        <p class="description-text">本サイトは、「主観的ウェルビーイング」と「空間の構成要素」の相関係数をもとに可視化するツールです。</p>
+    </header>
+
+    <div class="status-bar" id="status-bar">
+        <span id="data-status">CSVをロード中...</span>
+        <span style="color: var(--accent-pos);">data.csv</span>
+    </div>
+
+    <div class="config-panel" id="main-ui" style="display:none;">
+        <div class="target-section">
+            <label>Target Psychology</label>
+            <select id="target-psychology" class="target-select" onchange="runSimulation()"></select>
+        </div>
+        <div class="filter-panel">
+            <label>Attributes Filters</label>
+            <div class="filter-grid" id="filters"></div>
+        </div>
+    </div>
+
+    <div id="results-area" style="display:none;">
+        <div class="comparison-layout">
+            <div class="column">
+                <div class="column-header">Residential <div class="n-badge" id="n-housing">N=0</div></div>
+                <div class="card-grid" id="grid-housing"></div>
+            </div>
+            <div class="column">
+                <div class="column-header">Office <div class="n-badge" id="n-office">N=0</div></div>
+                <div class="card-grid" id="grid-office"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let masterData = [];
+let columns = { attr: [], psych: [], arch: [] };
+
+const imageUrlMap = {
+"地震による大きな被害の心配をしていない": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_7b44bd1a-fd60-49ab-80df-9c8c1daf0e5b.png",
+"台風や豪雨による大きな被害の心配をしていない": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x248_webp_fd5730dc-6272-4cd4-9e50-15f4bef56725.png",
+"泥棒や不審者が侵入する心配はない": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_c550557a-f4bb-46a2-ade5-12a9a3118a3a.png",
+"屋外の騒音が気にならない": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_bcbeab9e-385d-49c4-bcac-a00b11bc42fa.png",
+"外からの視線が気にならない": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_98a7e1cb-1372-4ed5-aeb8-077f15c3c0e2.png",
+"心地のよい居場所がある": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_ffef9cd5-c1b5-4db9-8277-331ac3486abd.png",
+"快適な室温を保つことができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-467x247_webp_7629dabb-9c2e-41d4-9aeb-3a3a5dc96e66.png",
+"快適に感じる広さがある": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_4059dea2-cf9f-42b9-a51b-dbf7263ce254.png",
+"快適に感じる天井の高さがある": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_686ea138-9992-4560-8fe6-c59c008d3546.png",
+"窓からの日当たりが気持ちよい": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-467x247_webp_1870a91d-0249-454a-99b8-b1848081753c.png",
+"窓からの風通しが気持ちよい": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_24f5f493-954b-4db6-a657-cacf6f34c33b.png",
+"窓からの眺めがよい": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_6ab0ce3c-8822-437b-b5fe-bb779f303655.png",
+"快適なテラス（縁側）がある": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x248_webp_2860e1c8-44e9-4094-9a29-7d331474d685.png",
+"雰囲気のよい照明がある": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_45dc4fcb-97f3-4dff-bd09-baae94b51769.png",
+"見通しがよく、空間全体を見渡せる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_30fdd1c6-6c78-464b-889a-26ea98b61c89.png",
+"開放感があり気持ちよい": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_f549390f-21e2-4d07-a108-df91bb083f12.png",
+"よい香りがしていて快適である": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_fc110954-0bfa-4b4b-84d2-d7017fe0d5f7.png",
+"身近に自然を感じることができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_fbd1e7aa-b875-4063-9a61-56b4ffa92fba.png",
+"建材に自然素材（木の板など）が多く用いられている": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_76d7740e-c064-4d3c-b850-d54c2e54d460.png",
+"みんなで集まる快適な場所がある": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_64a6c228-ce44-4a1b-9134-e825af27790b.png",
+"快適に食事を摂ることができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-374x199_webp_9ec8abd2-5ded-4059-a84d-aa5648610c1a.png",
+"快適に睡眠（仮眠）を摂ることができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_ad98d7e0-ac2f-4932-848e-d9c73ceb04d5.png",
+"快適なトイレがある": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_285d53dc-4fa0-459e-be99-2476aa9b0047.png",
+"清掃などによって清潔な状態に保たれている": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_eebe0339-ef38-43c7-b649-daae88880f53.png",
+"浴室（シャワー室）、洗面室で自分自身を清潔に保つことができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_335fe411-7502-463a-94a1-f21691a17d06.png",
+"家具のレイアウト等を自由に変えることができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_b122d7fa-6f96-46ba-ad85-fd162c75cf90.png",
+"建具を開閉すること等により空間を自由に使うことができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x248_webp_8dc5d578-4044-480f-989c-54d77f5e4327.png",
+"好みの壁紙に変えたり、カスタマイズすることができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_96e914a0-0901-4297-aa09-5d3acf092aee.png",
+"自分自身の個性を表現することができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_7cef425c-165e-4cff-a415-68abd0ff0112.png",
+"壁に近い位置が心地よい": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_075df169-b298-4b58-9e09-ea50fcc21743.png",
+"窓に近い位置が心地よい": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_7a6780a3-4516-411b-b1df-2fdd8caa345c.png",
+"好きな時に好きなところへ移動ができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_26016f2f-206f-40e9-9035-e4a06955af48.png",
+"目的の場所に合理的な経路で移動ができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_686ea138-9992-4560-8fe6-c59c008d3546.png",
+"自由に過ごし方を決めることができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_bb7a27fa-eba7-4964-b030-ca4fc088f776.png",
+"用途がない空間に心地よさを感じる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_5a5e503f-bd93-4ace-903c-5792c6fd9604.png",
+"芸術を楽しむことができる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_e4598144-1f48-4c79-a49c-3065f281aa45.png",
+"自分以外の誰かとコミュニケーションを取りやすい": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_7467e6d7-bae2-44bf-b5c1-68929d11ae80.png",
+"自分以外の誰かと適度な距離感を保てて快適である": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_25795e35-cca3-4510-933f-1f982dd5d17a.png",
+"自分以外の人の視線が気にならない": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-467x247_webp_5919edb8-c86c-425d-88d5-0de4d00be8ca.png",
+"気を使わずに行動できる": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_3ca5c842-3887-483e-b7d4-b1fb7932a702.png",
+"全体として、物が少なくて快適である": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_637e6864-1434-43f6-8a48-5d4b47891a2d.png",
+"全体として、物が多くて快適である": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_055b15b4-0d8a-48de-a616-85ddfaaf84d6.png",
+"快適に使用できる家具がある": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_eeda0058-1cd6-4bba-b886-81bba4320855.png",
+"芸術作品が身近にある": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_10adf594-3f01-4577-8251-330dd80ed848.png",
+"植物（観葉植物、生花）が置かれている": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x247_webp_10efae1b-0f37-4d85-a013-82b1756e426c.png",
+"好きな物が多くて楽しい": "https://storage.googleapis.com/studio-design-asset-files/projects/rROn1rzYWA/s-466x248_webp_ddf648dc-b926-4ee6-9b0f-218d09e4c5ec.png",
+};
+
+function superNormalize(s) { return s ? String(s).replace(/[\s\n\r（）\(\)]/g, "") : ""; }
+const normMap = {}; for (let k in imageUrlMap) { normMap[superNormalize(k)] = imageUrlMap[k]; }
+
+function getIconName(label) {
+    const l = superNormalize(label);
+    if (l.includes('安心')) return 'shield';
+    if (l.includes('音')) return 'volume-2';
+    return 'component';
+}
+
+window.onload = function () {
+    Papa.parse("data.csv", {
+        download: true, header: false, dynamicTyping: true, skipEmptyLines: true,
+        complete: function (results) {
+            const raw = results.data;
+            masterData = raw.slice(2);
+            columns.attr = [2, 3, 4].map(idx => ({ idx, name: raw[0][idx] }));
+            columns.psych = []; for (let i = 10; i <= 52; i++) columns.psych.push({ idx: i, label: raw[1][i] || raw[0][i] });
+            columns.arch = []; 
+            for (let i = 53; i <= 98; i++) {
+                if (i === 84) continue;
+                columns.arch.push({ idx: i, label: raw[1][i] || raw[0][i] });
+            }
+            setupFilters();
+            setupPsychList();
+            document.getElementById('data-status').innerText = "SUCCESS: データ同期完了";
+            document.getElementById('main-ui').style.display = 'grid';
+            document.getElementById('results-area').style.display = 'block';
+            runSimulation();
+        }
+    });
+};
+
+function setupFilters() {
+    const container = document.getElementById('filters'); container.innerHTML = '';
+    columns.attr.forEach(col => {
+        const uniqueValues = [...new Set(masterData.map(d => d[col.idx]))].filter(v => v != null).sort();
+        const div = document.createElement('div');
+        div.innerHTML = `<label>${col.name}</label><select class="filter-select" data-idx="${col.idx}" onchange="runSimulation()"><option value="all">ALL</option>${uniqueValues.map(v => `<option value="${v}">${v}</option>`).join('')}</select>`;
+        container.appendChild(div);
+    });
+}
+
+function setupPsychList() {
+    document.getElementById('target-psychology').innerHTML = columns.psych.map(p => `<option value="${p.idx}">${p.label}</option>`).join('');
+}
+
+function calculateCorrelation(data, idxX, idxY) {
+    const subset = data.filter(d => typeof d[idxX] === 'number' && typeof d[idxY] === 'number');
+    const n = subset.length; if (n < 2) return 0;
+    let sX=0, sY=0, sXY=0, sX2=0, sY2=0;
+    for(let i=0; i<n; i++) {
+        let x=subset[i][idxX], y=subset[i][idxY];
+        sX+=x; sY+=y; sXY+=x*y; sX2+=x*x; sY2+=y*y;
+    }
+    const num = (n*sXY)-(sX*sY), den = Math.sqrt(((n*sX2)-(sX*sX))*((n*sY2)-(sY*sY)));
+    return den===0 ? 0 : num / den;
+}
+
+function renderGrid(gridId, nId, data, targetIdx) {
+    const grid = document.getElementById(gridId);
+    const nDisplay = document.getElementById(nId);
+    const results = columns.arch.map(a => ({ label: a.label, r: calculateCorrelation(data, targetIdx, a.idx) })).sort((a, b) => b.r - a.r);
+    nDisplay.innerText = `N = ${data.length}`;
+    grid.innerHTML = '';
+    results.forEach((res, i) => {
+        if (Math.abs(res.r) < 0.01) return;
+        const img = normMap[superNormalize(res.label)];
+        const visual = img ? `<img src="${img}" loading="lazy">` : `<div class="icon-placeholder"><i data-lucide="${getIconName(res.label)}" stroke-width="1"></i></div>`;
+        const card = document.createElement('div');
+        card.className = 'card is-visible';
+        card.innerHTML = `<div class="card-visual">${visual}</div><div class="card-content"><div class="card-label">${res.label}</div><div class="card-footer"><span class="r-value ${res.r>=0?'pos':'neg'}">${res.r.toFixed(2)}</span><span class="r-unit">Correlation</span></div></div>`;
+        grid.appendChild(card);
+    });
+    lucide.createIcons();
+}
+
+function runSimulation() {
+    const selects = document.querySelectorAll('.filter-select');
+    let filteredTotal = masterData;
+    selects.forEach(s => {
+        if (s.value !== 'all') {
+            const val = isNaN(s.value) ? s.value : Number(s.value);
+            filteredTotal = filteredTotal.filter(d => d[s.dataset.idx] === val);
+        }
+    });
+    document.getElementById('total-n').innerText = `TOTAL N = ${filteredTotal.length}`;
+    const targetIdx = parseInt(document.getElementById('target-psychology').value);
+    const housingData = filteredTotal.filter(d => superNormalize(String(d[9])) === "住宅");
+    const officeData = filteredTotal.filter(d => superNormalize(String(d[9])) === "オフィス");
+    renderGrid('grid-housing', 'n-housing', housingData, targetIdx);
+    renderGrid('grid-office', 'n-office', officeData, targetIdx);
+}
+
+// プレビュー画面生成
+function generatePreview() {
+    const targetSelect = document.getElementById('target-psychology');
+    const targetText = targetSelect.options[targetSelect.selectedIndex].text;
+    const filterInfo = Array.from(document.querySelectorAll('.filter-select')).map(s => `${s.previousElementSibling.innerText}: ${s.value === 'all' ? 'ALL' : s.value}`).join(' / ');
+
+    const win = window.open("", "_blank");
+    win.document.write(`
+        <html>
+        <head>
+            <title>Preview: ウェルビーイングと空間要素</title>
+            <style>
+                body { font-family: sans-serif; padding: 20px; color: #333; background: #525659; display: flex; flex-direction: column; align-items: center; }
+                .page { background: white; width: 210mm; height: 296mm; padding: 15mm; box-shadow: 0 0 20px rgba(0,0,0,0.5); box-sizing: border-box; overflow: hidden; position: relative; }
+                .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+                .title { font-size: 1.3rem; margin: 0; font-weight: bold; }
+                .meta-box { background: #f5f5f5; padding: 12px; margin-bottom: 15px; font-size: 0.75rem; border: 1px solid #eee; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                .col-title { background: #000; color: #fff; text-align: center; padding: 4px; font-size: 0.7rem; margin-bottom: 10px; }
+                .item-row { display: flex; align-items: center; border-bottom: 1px solid #eee; padding: 4px 0; font-size: 0.62rem; }
+                .rank { width: 15px; color: #999; font-weight: bold; }
+                .img-thumb { width: 45px; height: 28px; object-fit: cover; margin: 0 10px; border: 1px solid #eee; }
+                .label { flex-grow: 1; margin-right: 8px; line-height: 1.1; }
+                .val { font-weight: bold; font-size: 0.85rem; }
+                .btn-area { margin-bottom: 20px; }
+                .dl-btn { background: #d4a373; color: white; border: none; padding: 12px 30px; cursor: pointer; font-weight: bold; }
+                @media print { .btn-area { display: none; } body { background: none; padding: 0; } .page { box-shadow: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="btn-area"><button class="dl-btn" onclick="window.parent.exportPDF(document.getElementById('pdf-root'), '${targetText}')">PDFを保存</button></div>
+            <div class="page" id="pdf-root">
+                <div class="header">
+                    <div class="title">ウェルビーイングと空間要素</div>
+                    <div style="font-size: 0.65rem; color: #666; margin-top: 3px;">Architecture Psychology Correlation Report</div>
+                </div>
+                <div class="meta-box">
+                    <strong>Target Psychology:</strong> ${targetText} | <strong>Attributes:</strong> ${filterInfo}
+                </div>
+                <div class="grid">
+                    ${['Residential', 'Office'].map(type => {
+                        const gridId = type === 'Residential' ? 'grid-housing' : 'grid-office';
+                        const nVal = document.getElementById(type === 'Residential' ? 'n-housing' : 'n-office').innerText;
+                        const cards = Array.from(document.getElementById(gridId).querySelectorAll('.card')).slice(0, 10);
+                        return `
+                            <div>
+                                <div class="col-title">${type} (${nVal})</div>
+                                ${cards.map((card, idx) => {
+                                    const label = card.querySelector('.card-label').innerText;
+                                    const val = card.querySelector('.r-value').innerText;
+                                    const img = card.querySelector('img') ? card.querySelector('img').src : '';
+                                    return `
+                                        <div class="item-row">
+                                            <div class="rank">${idx + 1}</div>
+                                            ${img ? `<img src="${img}" class="img-thumb">` : `<div class="img-thumb" style="background:#f0f0f0"></div>`}
+                                            <div class="label">${label}</div>
+                                            <div class="val">${val}</div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div style="position: absolute; bottom: 15mm; width: calc(100% - 30mm); font-size: 0.55rem; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 8px;">
+                    ※ 本データは統計的相関を示すものであり、因果関係を保証するものではありません。
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+    win.document.close();
+
+    win.exportPDF = (element, title) => {
+        const opt = {
+            margin: 0,
+            filename: `ウェルビーイングと空間要素_${title}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 3, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    };
+}
+</script>
+</body>
+</html>
