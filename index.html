@@ -41,40 +41,36 @@
         .column-header { text-align: center; margin-bottom: 20px; padding: 10px; background: var(--primary); color: white; letter-spacing: 0.2em; font-weight: 200; text-transform: uppercase; font-size: 0.9rem; }
         .n-badge { font-size: 0.7rem; color: #aaa; margin-top: 5px; }
 
-        /* リスト形式の設定 */
-        .card-grid { display: flex; flex-direction: column; gap: 12px; min-height: 400px; }
+        /* グリッド形式への設定変更 */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; min-height: 400px; }
         
-        /* 横長カードのデザイン */
         .card { 
             background: var(--card-bg); border: 1px solid var(--border); 
-            display: flex; flex-direction: row; align-items: center;
+            display: flex; flex-direction: column; 
             opacity: 0; transform: translateY(20px);
             transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            position: relative; min-height: 100px;
+            position: relative;
         }
         .card.is-visible { opacity: 1; transform: translateY(0); }
-        .card:hover { transform: translateX(5px); box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-color: var(--primary); }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-color: var(--primary); }
 
-        /* 順位バッジ（控えめな黒に統一） */
+        /* 順位バッジ（すべての順位で同じ控えめなスタイルに統一） */
         .rank-badge {
-            position: absolute; top: 8px; left: 10px; z-index: 10;
+            position: absolute; top: 10px; left: 10px; z-index: 10;
             font-family: 'Georgia', serif; font-weight: bold;
-            color: var(--text); font-size: 1.1rem; opacity: 0.3;
+            color: var(--text); font-size: 1.1rem; opacity: 0.4;
             text-shadow: 0 0 8px rgba(255,255,255,1);
         }
         
-        /* 画像エリア */
-        .card-visual { width: 160px; height: 100px; overflow: hidden; background: #f0f0f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .card-visual { width: 100%; height: 140px; overflow: hidden; background: #f0f0f0; display: flex; align-items: center; justify-content: center; }
         .card-visual img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* テキストと数値エリア */
-        .card-content { padding: 10px 25px; flex-grow: 1; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-        .card-label { font-size: 0.9rem; font-weight: 500; line-height: 1.4; flex-grow: 1; margin: 0; }
-        
-        .card-footer { display: flex; flex-direction: column; align-items: flex-end; min-width: 100px; }
-        .r-value { font-size: 1.8rem; font-weight: 200; font-family: 'Georgia', serif; line-height: 1; }
+        .card-content { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-label { font-size: 0.8rem; font-weight: 500; min-height: 3.2em; margin-bottom: 10px; line-height: 1.5; padding-top: 5px; }
+        .card-footer { display: flex; justify-content: space-between; align-items: baseline; }
+        .r-value { font-size: 1.6rem; font-weight: 200; font-family: 'Georgia', serif; }
         .pos { color: var(--accent-pos); } .neg { color: var(--accent-neg); }
-        .r-unit { font-size: 0.5rem; color: #aaa; text-transform: uppercase; margin-top: 4px; }
+        .r-unit { font-size: 0.5rem; color: #aaa; margin-left: 4px; }
 
         @media (max-width: 1100px) {
             .comparison-layout, .config-panel { grid-template-columns: 1fr; }
@@ -95,7 +91,7 @@
         <div class="title-row" style="margin-top:20px;">
             <div id="total-n" style="font-size: 0.8rem; font-weight: bold; letter-spacing: 0.1em;">TOTAL N = 0</div>
         </div>
-        <p class="description-text">本サイトは、「主観的ウェルビーイング」と「空間の構成要素」の相関係数をもとに、影響の大きい要素の把握や、要素同士の比較ができる可視化ツールです。</p>
+        <p class="description-text">本サイトは、「主観的ウェルビーイング」と「空間の構成要素」の相関係数をもとに可視化するツールです。</p>
     </header>
 
     <div class="status-bar" id="status-bar">
@@ -250,7 +246,6 @@ function renderGrid(gridId, nId, data, targetIdx) {
     let displayRank = 1;
     results.forEach((res, i) => {
         if (Math.abs(res.r) < 0.01) return;
-        
         const rank = displayRank++;
         const img = normMap[superNormalize(res.label)];
         const visual = img ? `<img src="${img}" loading="lazy">` : `<div class="icon-placeholder"><i data-lucide="${getIconName(res.label)}" stroke-width="1"></i></div>`;
