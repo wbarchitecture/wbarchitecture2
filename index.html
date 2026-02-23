@@ -90,10 +90,7 @@
         <p class="description-text">本サイトは、「主観的ウェルビーイング」と「空間の構成要素」の相関係数をもとに可視化するツールです。</p>
     </header>
 
-    <div class="status-bar" id="status-bar">
-        <span id="data-status">CSVをロード中...</span>
-        <span style="color: var(--accent-pos);">data.csv</span>
-    </div>
+    
 
     <div class="config-panel" id="main-ui" style="display:none;">
         <div class="target-section">
@@ -210,7 +207,7 @@ window.onload = function () {
 
             setupFilters();
             setupPsychList();
-            document.getElementById('data-status').innerText = "SUCCESS: データ同期完了";
+
             document.getElementById('main-ui').style.display = 'grid';
             document.getElementById('results-area').style.display = 'block';
             runSimulation();
