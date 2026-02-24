@@ -12,11 +12,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #1a1a1a; --accent-pos: #d4a373; --accent-neg: #457b9d;
+            --primary: #4d4d4d; --accent-pos: #d4a373; --accent-neg: #457b9d;
             --bg: #f8f8f8; --card-bg: #ffffff; --text: #222; --border: #eeeeee;
         }
         body { font-family: "Klee One", cursive, "Helvetica Neue", Arial, "Hiragino Sans", sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 40px 80px; }
+
+         @media screen and (max-width: 767px) {
+          .container {
+              width: auto; /* スマホ横幅を全幅にする */
+              padding: 10px;
+          }
+        }
         
         header { border-bottom: 0px solid var(--primary); margin-bottom: 10px; padding-bottom: 20px; display: flex; flex-direction: column; }
         .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
@@ -41,7 +48,7 @@
         .target-select { font-family: "Klee One", cursive, "Helvetica Neue", Arial, "Hiragino Sans", sans-serif; font-size: 1rem; font-weight: 300; background: #fafafa; border-bottom: 2px solid var(--primary); }
 
         .comparison-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-        .column-header { text-align: center; margin-bottom: 20px; padding: 10px; background: var(--primary); color: white; letter-spacing: 0.2em; font-weight: 200; text-transform: uppercase; font-size: 0.9rem; }
+        .column-header { text-align: center; margin-bottom: 20px; padding: 10px; background: var(--primary); color: white; letter-spacing: 0.2em; font-weight: 200; text-transform: uppercase; font-size: 1rem; }
         .n-badge { font-size: 0.7rem; color: #aaa; margin-top: 5px; }
 
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; min-height: 400px; }
@@ -82,15 +89,16 @@
 <div class="container" id="main-content">
     <header>
         <div class="header-top">
-            <h1 style="font-weight: 300; letter-spacing: 0.1em; margin:0;">ウェルビーイングと空間要素</h1>
+            <h1 style="font-size: 1.6rem; font-weight: 300; letter-spacing: 0.1em; margin:0;">ウェルビーイングと空間要素</h1>
             <button class="print-btn" onclick="generatePreview()">
                 <i data-lucide="printer" size="16"></i> PRINT
             </button>
         </div>
+        <p class="description-text">本サイトは、「主観的ウェルビーイング」と「空間の構成要素」の相関係数をもとに可視化するツールです。</p>
         <div class="title-row" style="margin-top:20px;">
             <div id="total-n" style="font-size: 0.8rem; font-weight: bold; letter-spacing: 0.1em;">TOTAL N = 0</div>
         </div>
-        <p class="description-text">本サイトは、「主観的ウェルビーイング」と「空間の構成要素」の相関係数をもとに可視化するツールです。</p>
+        
     </header>
 
     
@@ -109,11 +117,11 @@
     <div id="results-area" style="display:none;">
         <div class="comparison-layout">
             <div class="column">
-                <div class="column-header">Residential <div class="n-badge" id="n-housing">N=0</div></div>
+                <div class="column-header">住宅 <div class="n-badge" id="n-housing">N=0</div></div>
                 <div class="card-grid" id="grid-housing"></div>
             </div>
             <div class="column">
-                <div class="column-header">Office <div class="n-badge" id="n-office">N=0</div></div>
+                <div class="column-header">オフィス <div class="n-badge" id="n-office">N=0</div></div>
                 <div class="card-grid" id="grid-office"></div>
             </div>
         </div>
